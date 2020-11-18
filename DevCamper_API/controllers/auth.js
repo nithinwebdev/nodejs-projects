@@ -17,11 +17,8 @@ exports.register = asyncHandler(async (req, res, next) => {
   });
   // Create Token
   const token = user.getSignedJwtToken();
-  // send the token in response
-  res.status(200).json({
-    success: true,
-    token: token,
-  });
+  // send the token in a cookie
+  sendTokenResponse(user, 200, res);
 });
 // @desc    Login User
 // @route   POST /api/v1/register
@@ -50,9 +47,31 @@ exports.login = asyncHandler(async (req, res, next) => {
   }
   // Create Token
   const token = user.getSignedJwtToken();
-  // send the token in response
-  res.status(200).json({
-    success: true,
-    token: token,
-  });
+  // send the token in a cookie
+  sendTokenResponse(user, 200, res);
 });
+// Get token from model, create cookie and send response
+//we need acccess to the user,statuscode and response object to call res.status
+const sendTokenResponse = (user, statusCode, res) => {
+  // Create Token
+  const token = user.getSignedJwtToken();
+  const options = {
+    expires: new Date(
+      // calculate 30 days
+      Date.now() + process.env.JWT_COOKIE_EXPIRE * 24 * 60 * 60 * 1000
+    ),
+    // only access cookie through clien side scripts
+    httpOnly: true,
+  };
+  // for production environment set the secure property to true // this will use https instead of http
+  if (process.env.NODE_ENV === "production") {
+    options.secure = true;
+  }
+  // send token in response as a cookie
+  res
+    .status(statusCode)
+    // .cookie takes 3 things, the key-what cookie is called, the token itself, the options
+    .cookie("token", token, options)
+    // we send some json data
+    .json({ success: true, token });
+};
