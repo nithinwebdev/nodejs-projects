@@ -17,6 +17,8 @@ const advancedResults = require("../middleware/advancedResults");
 const courseRouter = require("./courses");
 // initialize Router
 const router = express.Router();
+// include protect  and authorize middleware
+const { protect, authorize } = require("../middleware/auth");
 // re-route into other resource routers--pass it on to the course router
 //if this path is hit /:bootcampId/courses then getCourses route in courses.js is called
 router.use("/:bootcampId/courses", courseRouter);
@@ -26,18 +28,24 @@ router.use("/:bootcampId/courses", courseRouter);
 // getting the bootcamps within a radius
 router.route("/radius/:zipcode/:distance").get(getBootcampsInRadius);
 // router for photo upload -- upload is a put request
-router.route("/:id/photo").put(bootcampPhotoUpload);
+// add the {protect,authorize} middleware for photo upload
+// {authorize } - only a publisher and admin can create bootcamps and manage bootcamps
+router
+  .route("/:id/photo")
+  .put(protect, authorize("publisher", "admin"), bootcampPhotoUpload);
 // wherever we want to use the advancedResults middleware we need to pass it in with the method,
 // we want to use advancedResults with getBootcamp -- it takes in the model and any populate
+//we add {protect} middleware to createBootcamp
 router
   .route("/")
   .get(advancedResults(Bootcamp, "courses"), getBootcamps)
-  .post(createBootcamp);
+  .post(protect, authorize("publisher", "admin"), createBootcamp);
 // router methods where id is required
+//we add {protect} middleware to updateBootcamp,deleteBootcamp
 router
   .route("/:id")
   .get(getBootcamp)
-  .put(updateBootcamp)
-  .delete(deleteBootcamp);
+  .put(protect, authorize("publisher", "admin"), updateBootcamp)
+  .delete(protect, authorize("publisher", "admin"), deleteBootcamp);
 // export the router
 module.exports = router;

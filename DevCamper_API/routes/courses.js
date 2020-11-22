@@ -13,8 +13,11 @@ const advancedResults = require("../middleware/advancedResults");
 // initialize Router
 // { mergeParams: true } is used to merging the url params from courses
 const router = express.Router({ mergeParams: true });
+// include protect and authorize middleware
+const { protect, authorize } = require("../middleware/auth");
 // in our bootcamps route we are forwarding the request to courseRouter
 //so for post request with id we can simply add a .post()
+//we add {protect} middleware to addCourse
 router
   .route("/")
   .get(
@@ -24,6 +27,11 @@ router
     }),
     getCourses
   )
-  .post(addCourse);
-router.route("/:id").get(getCourse).put(updateCourse).delete(deleteCourse);
+  .post(protect, authorize("publisher", "admin"), addCourse);
+//we add {protect} middleware to updateCourse deleteCourse
+router
+  .route("/:id")
+  .get(getCourse)
+  .put(protect, authorize("publisher", "admin"), updateCourse)
+  .delete(protect, authorize("publisher", "admin"), deleteCourse);
 module.exports = router;
